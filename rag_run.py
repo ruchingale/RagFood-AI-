@@ -3,18 +3,22 @@ import json
 import chromadb
 import requests
 
-# 🧠 Constants
+# Constants
 CHROMA_DIR = "chroma_db"
 COLLECTION_NAME = "foods"
 JSON_FILE = "foods.json"
 EMBED_MODEL = "mxbai-embed-large"
 LLM_MODEL = "llama3.2"
 
-# 🔗 Set up persistent ChromaDB
+# Load data
+with open(JSON_FILE, "r", encoding="utf-8") as f:
+    food_data = json.load(f)
+
+# Setup ChromaDB
 chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
 collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME)
 
-# 🧠 Ollama embedding function
+# Ollama embedding function
 def get_embedding(text):
     response = requests.post("http://localhost:11434/api/embeddings", json={
         "model": EMBED_MODEL,
@@ -22,27 +26,31 @@ def get_embedding(text):
     })
     return response.json()["embedding"]
 
-# 💾 Load food data from existing JSON
-with open(JSON_FILE, "r", encoding="utf-8") as f:
-    food_data = json.load(f)
-
-# ✅ Add only new items (based on ID)
+# Add only new items
 existing_ids = set(collection.get()['ids'])
 new_items = [item for item in food_data if item['id'] not in existing_ids]
 
 if new_items:
     print(f"🆕 Adding {len(new_items)} new documents to Chroma...")
     for item in new_items:
-        emb = get_embedding(item['text'])
+        # Enhance text with region/type
+        enriched_text = item["text"]
+        if "region" in item:
+            enriched_text += f" This food is popular in {item['region']}."
+        if "type" in item:
+            enriched_text += f" It is a type of {item['type']}."
+
+        emb = get_embedding(enriched_text)
+
         collection.add(
-            documents=[item['text']],
+            documents=[item["text"]],  # Use original text as retrievable context
             embeddings=[emb],
-            ids=[item['id']]
+            ids=[item["id"]]
         )
 else:
-    print("✅ All documents already embedded in ChromaDB.")
+    print("✅ All documents already in ChromaDB.")
 
-# 🤖 RAG Query function
+# RAG query
 def rag_query(question):
     q_emb = get_embedding(question)
     results = collection.query(query_embeddings=[q_emb], n_results=2)
@@ -63,12 +71,12 @@ Answer:"""
     })
     return response.json()["response"].strip()
 
-# 🧑‍💻 Interactive CLI
-print("\n🧠 RAG is ready. Type a question below (or 'exit' to quit):\n")
+# Interactive loop
+print("\n🧠 RAG is ready. Ask a question (type 'exit' to quit):\n")
 while True:
-    user_input = input("You: ")
-    if user_input.lower() in ["exit", "quit"]:
+    question = input("You: ")
+    if question.lower() in ["exit", "quit"]:
         print("👋 Goodbye!")
         break
-    answer = rag_query(user_input)
+    answer = rag_query(question)
     print("🤖:", answer)
