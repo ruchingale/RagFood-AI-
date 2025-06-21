@@ -52,9 +52,27 @@ else:
 
 # RAG query
 def rag_query(question):
+    # Step 1: Embed the user question
     q_emb = get_embedding(question)
-    results = collection.query(query_embeddings=[q_emb], n_results=2)
-    context = "\n".join(results['documents'][0])
+
+    # Step 2: Query the vector DB
+    results = collection.query(query_embeddings=[q_emb], n_results=3)
+
+    # Step 3: Extract documents
+    top_docs = results['documents'][0]
+    top_ids = results['ids'][0]
+
+    # Step 4: Show friendly explanation of retrieved documents
+    print("\n🧠 Retrieving relevant information to reason through your question...\n")
+
+    for i, doc in enumerate(top_docs):
+        print(f"🔹 Source {i + 1} (ID: {top_ids[i]}):")
+        print(f"    \"{doc}\"\n")
+
+    print("📚 These seem to be the most relevant pieces of information to answer your question.\n")
+
+    # Step 5: Build prompt from context
+    context = "\n".join(top_docs)
 
     prompt = f"""Use the following context to answer the question.
 
@@ -64,12 +82,16 @@ Context:
 Question: {question}
 Answer:"""
 
+    # Step 6: Generate answer with Ollama
     response = requests.post("http://localhost:11434/api/generate", json={
         "model": LLM_MODEL,
         "prompt": prompt,
         "stream": False
     })
+
+    # Step 7: Return final result
     return response.json()["response"].strip()
+
 
 # Interactive loop
 print("\n🧠 RAG is ready. Ask a question (type 'exit' to quit):\n")
