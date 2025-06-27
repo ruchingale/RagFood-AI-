@@ -5,89 +5,78 @@ Here’s a clear, beginner-friendly `README.md` for your RAG project, designed t
 ## 📄 `README.md`
 
 ````markdown
-# 🧠 RAG-Food: Simple Retrieval-Augmented Generation with ChromaDB + Ollama
+# 🧠 RAG-Food: Retrieval-Augmented Generation Demo (Python + Next.js)
 
-This is a **minimal working RAG (Retrieval-Augmented Generation)** demo using:
+This is a **Retrieval-Augmented Generation (RAG)** demo for food-related questions, using:
 
-- ✅ Local LLM via [Ollama](https://ollama.com/)
-- ✅ Local embeddings via `mxbai-embed-large`
+- ✅ Python backend (FastAPI)
+- ✅ Next.js frontend (React)
+- ✅ [Clarifai](https://clarifai.com/) for embeddings (`mxbai-embed-large-v1`)
 - ✅ [ChromaDB](https://www.trychroma.com/) as the vector database
-- ✅ A simple food dataset in JSON (Indian foods, fruits, etc.)
+- ✅ [Ollama](https://ollama.com/) for local LLM (e.g. `llama3.2`)
+- ✅ A simple food dataset in JSON
 
 ---
 
 ## 🎯 What This Does
 
-This app allows you to ask questions like:
-
-- “Which Indian dish uses chickpeas?”
-- “What dessert is made from milk and soaked in syrup?”
-- “What is masala dosa made of?”
-
-It **does not rely on the LLM’s built-in memory**. Instead, it:
-
-1. **Embeds your custom text data** (about food) using `mxbai-embed-large`
-2. Stores those embeddings in **ChromaDB**
-3. For any question, it:
-   - Embeds your question
-   - Finds relevant context via similarity search
-   - Passes that context + question to a local LLM (`llama3.2`)
-4. Returns a natural-language answer grounded in your data.
+- Lets you ask questions like:
+  - “Which Indian dish uses chickpeas?”
+  - “What dessert is made from milk and soaked in syrup?”
+  - “What is masala dosa made of?”
+- Answers are **grounded in your own food data**, not just LLM memory.
 
 ---
 
 ## 📦 Requirements
 
-### ✅ Software
-
 - Python 3.8+
-- Ollama installed and running locally
-- ChromaDB installed
-
-### ✅ Ollama Models Needed
-
-Run these in your terminal to install them:
-
-```bash
-ollama pull llama3.2
-ollama pull mxbai-embed-large
-````
-
-> Make sure `ollama` is running in the background. You can test it with:
->
-> ```bash
-> ollama run llama3.2
-> ```
+- Node.js 18+
+- Ollama (running locally)
+- Clarifai account (for API key)
+- ChromaDB (Python package)
 
 ---
 
-## 🛠️ Installation & Setup
+## 🚀 Setup & Running
 
-### 1. Clone or download this repo
-
-```bash
-git clone https://github.com/yourname/rag-food
-cd rag-food
-```
-
-### 2. Install Python dependencies
+### 1. **Clone this repo**
 
 ```bash
-pip install chromadb requests
+git clone https://github.com/ruchingale/RagFood-AI-.git
+cd RagFood-AI-
 ```
 
-### 3. Run the RAG app
+### 2. **Install Python dependencies**
 
 ```bash
-python rag_run.py
+pip install -r requirements.txt
 ```
 
-If it's the first time, it will:
+### 3. **Set up environment variables**
 
-* Create `foods.json` if missing
-* Generate embeddings for all food items
-* Load them into ChromaDB
-* Run a few example questions
+Create a `.env` file in the root directory and add your Clarifai API key:
+
+```
+CLARIFAI_API_KEY=your_api_key_here
+```
+
+### 4. **Run the app**
+
+#### Backend (Python)
+
+```bash
+uvicorn app:app --reload
+```
+
+#### Frontend (Next.js)
+
+```bash
+npm install
+npm run dev
+```
+
+Now, you can access the app at `http://localhost:3000`.
 
 ---
 
@@ -95,8 +84,17 @@ If it's the first time, it will:
 
 ```
 rag-food/
-├── rag_run.py       # Main app script
-├── foods.json       # Food knowledge base (created if missing)
+├── app/             # Backend code (FastAPI)
+│   ├── main.py      # Main app script
+│   ├── models.py    # Pydantic models
+│   ├── routes.py    # API routes
+│   └── utils.py     # Utility functions
+├── frontend/        # Frontend code (Next.js)
+│   ├── pages/       # Next.js pages
+│   ├── components/  # React components
+│   └── styles/      # CSS styles
+├── public/          # Public assets
+├── .env             # Environment variables
 ├── README.md        # This file
 ```
 
@@ -104,43 +102,61 @@ rag-food/
 
 ## 🧠 How It Works (Step-by-Step)
 
-1. **Data** is loaded from `foods.json`
-2. Each entry is embedded using Ollama's `mxbai-embed-large`
+1. **Data** is loaded from the JSON file
+2. Each entry is embedded using Clarifai's `mxbai-embed-large-v1`
 3. Embeddings are stored in ChromaDB
 4. When you ask a question:
 
-   * The question is embedded
-   * The top 1–2 most relevant chunks are retrieved
-   * The context + question is passed to `llama3.2`
-   * The model answers using that info only
+   - The question is embedded
+   - The top 1–2 most relevant chunks are retrieved
+   - The context + question is passed to the local LLM via Ollama
+   - The model answers using that info only
 
 ---
 
 ## 🔍 Try Custom Questions
 
-You can update `rag_run.py` to include your own questions like:
+You can update the frontend code to include your own questions like:
 
-```python
-print(rag_query("What is tandoori chicken?"))
-print(rag_query("Which foods are spicy and vegetarian?"))
+```javascript
+const response = await fetch("/api/query", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ question: "What is tandoori chicken?" }),
+});
 ```
 
 ---
 
 ## 🚀 Next Ideas
 
-* Swap in larger datasets (Wikipedia articles, recipes, PDFs)
-* Add a web UI with Gradio or Flask
-* Cache embeddings to avoid reprocessing on every run
+- Swap in larger datasets (Wikipedia articles, recipes, PDFs)
+- Add more advanced search and filtering options
+- Improve UI/UX with better design and user feedback
+- Deploy the app on a cloud platform (e.g. Heroku, Vercel)
 
 ---
 
 ## 👨‍🍳 Credits
 
-Made by Callum using:
+Made using:
 
-* [Ollama](https://ollama.com)
-* [ChromaDB](https://www.trychroma.com)
-* [mxbai-embed-large](https://ollama.com/library/mxbai-embed-large)
-* Indian food inspiration 🍛
+- [Ollama](https://ollama.com)
+- [ChromaDB](https://www.trychroma.com)
+- [Clarifai](https://clarifai.com)
+- Indian food inspiration 🍛
 
+🛡️ .gitignore
+This project ignores:
+
+chroma_db (ChromaDB data)
+.env (secrets)
+node_modules, .next, etc.
+
+
+Enjoy exploring RAG with your own food data!
+
+
+````
