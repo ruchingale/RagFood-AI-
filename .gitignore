@@ -1,2 +1,6 @@
 chroma_db/
 .env 
+# Node/Next.js
+ragfood-next/node_modules/
+ragfood-next/.next/
+ragfood-next/.env.local
